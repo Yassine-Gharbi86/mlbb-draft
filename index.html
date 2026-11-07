@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MLBB 5v5 Team Randomizer</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+  :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { background: #0f172a; }
+</style>
+</head>
+<body class="min-h-screen text-slate-100 font-sans">
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
+  <p class="text-center text-slate-400 mt-2 text-sm">One of each lane per team. Misha/Lex are undecided, so they show up as one slot in Mid and Jungle.</p>
+
+  <div class="flex justify-center mt-8">
+    <button id="btn" class="px-8 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg">
+      🎲 Randomize Teams
+    </button>
+  </div>
+
+  <div id="result" class="grid md:grid-cols-2 gap-6 mt-10"></div>
+</main>
+
+<script>
+  const LANES = ["Gold Lane", "Mid Lane", "Jungle", "EXP Lane", "Roam"];
+  const ICONS = { "Gold Lane": "🪙", "Mid Lane": "🔮", "Jungle": "🌲", "EXP Lane": "⚔️", "Roam": "🛡️" };
+
+  const shuffle = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  function generate() {
+    const pairs = {
+      "Gold Lane": ["Dilla", "Soup"],
+      "Mid Lane": ["Edouard", "Misha/Lex"],
+      "Jungle": ["Lifehack", "Misha/Lex"],
+      "EXP Lane": ["Maison", "Person1"],
+      "Roam": ["Blaze", "Kranok"],
+    };
+
+    const A = {}, B = {};
+    for (const lane of LANES) {
+      const [x, y] = shuffle(pairs[lane]);
+      A[lane] = x;
+      B[lane] = y;
+    }
+    return [A, B];
+  }
+
+  function card(title, team, color) {
+    const rows = LANES.map(lane => `
+      <li class="flex items-center justify-between bg-slate-900/60 rounded-lg px-4 py-3">
+        <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
+        <span class="font-semibold">${team[lane]}</span>
+      </li>`).join("");
+    return `
+      <section class="rounded-2xl p-5 bg-slate-800 border-t-4 ${color} shadow-lg">
+        <h2 class="text-xl font-bold mb-4">${title}</h2>
+        <ul class="space-y-2">${rows}</ul>
+      </section>`;
+  }
+
+  function render() {
+    const [A, B] = generate();
+    document.getElementById("result").innerHTML =
+      card("Team Blue", A, "border-blue-500") + card("Team Red", B, "border-red-500");
+  }
+
+  document.getElementById("btn").addEventListener("click", render);
+  render();
+</script>
+</body>
+</html>
