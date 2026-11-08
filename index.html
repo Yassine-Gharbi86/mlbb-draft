@@ -22,7 +22,7 @@
 <body class="min-h-screen text-slate-100 font-sans">
 <main class="max-w-5xl mx-auto px-4 py-10">
   <h1 class="text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-sm">THE GOONERS</p>
+  <p class="text-center text-slate-400 mt-2 text-sm">Everyone gets a random team and a random lane. Out of your comfort zone mode 😈</p>
 
   <div class="flex justify-center mt-8">
     <button id="btn" class="px-8 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
@@ -50,12 +50,12 @@
   const LANES = ["Gold Lane", "Mid Lane", "Jungle", "EXP Lane", "Roam"];
   const ICONS = { "Gold Lane": "🪙", "Mid Lane": "🔮", "Jungle": "🌲", "EXP Lane": "⚔️", "Roam": "🛡️" };
   const MESSAGES = [
-    "maison is gay... 🔮",
+    "Consulting the ancient spirits... 🔮",
     "Asking the cat... 🐱",
-    "N E G... 💸",
-    "bl4ze is the goat... 💀",
-    "dilla is a bum... 😴",
-    "Lifehack is gay 👀",
+    "Bribing the RNG gods... 💸",
+    "Calculating who feeds... 💀",
+    "Checking who's gonna AFK... 😴",
+    "Almost there... 👀",
   ];
 
   /* ---------- team logic ---------- */
@@ -68,20 +68,18 @@
     return a;
   };
 
+  const PLAYERS = ["Dilla", "Soup", "Edouard", "Misha", "Lex", "Lifehack", "Maison", "Person1", "Blaze", "Kranok"];
+
   function generate() {
-    const pairs = {
-      "Gold Lane": ["Dilla", "Soup"],
-      "Mid Lane": ["Edouard", "Misha/Lex"],
-      "Jungle": ["Lifehack", "Misha/Lex"],
-      "EXP Lane": ["Maison", "Person1"],
-      "Roam": ["Blaze", "Kranok"],
-    };
+    // everyone is shuffled: first 5 = Blue, last 5 = Red
+    const p = shuffle(PLAYERS);
     const A = {}, B = {};
-    for (const lane of LANES) {
-      const [x, y] = shuffle(pairs[lane]);
-      A[lane] = x;
-      B[lane] = y;
-    }
+    // each team gets its own random lane order, so anyone can get any lane
+    const lanesA = shuffle(LANES), lanesB = shuffle(LANES);
+    LANES.forEach((lane, i) => {
+      A[lanesA[i]] = p[i];
+      B[lanesB[i]] = p[i + 5];
+    });
     return [A, B];
   }
 
