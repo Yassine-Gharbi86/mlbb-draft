@@ -82,7 +82,7 @@
       <h1 class="f-display title-gradient text-2xl sm:text-5xl font-black tracking-wider mt-2">DRAFT ARENA</h1>
       <p class="text-slate-400 text-xs sm:text-lg mt-1">Random lanes, heroes &amp; builds 😈</p>
     </div>
-    <div id="loading" class="f-display absolute bottom-0 inset-x-0 text-center text-amber-200/70 text-[9px] sm:text-[10px] tracking-[.3em] uppercase pointer-events-none">Loading heroes… 0%</div>
+    <div id="loading" class="f-display absolute bottom-0 inset-x-0 text-center text-amber-200/70 text-[9px] sm:text-[10px] tracking-[.3em] uppercase pointer-events-none">Loading Lunox… 0%</div>
   </header>
 
   <p id="status" class="f-display text-center text-amber-300 text-[11px] sm:text-sm tracking-[.2em] uppercase mt-3 min-h-[2.5rem]"></p>
@@ -123,7 +123,7 @@
   const ICONS = { "Gold Lane": "🪙", "Mid Lane": "🔮", "Jungle": "🌲", "EXP Lane": "⚔️", "Roam": "🛡️" };
   const MESSAGES = [
     "Consulting the ancient spirits... 🔮",
-    "Asking Cici and Lunox... 🦋",
+    "Asking Lunox... 🦋",
     "Bribing the RNG gods... 💸",
     "Calculating who feeds... 💀",
     "Checking who's gonna AFK... 😴",
@@ -307,12 +307,11 @@
     $("red").innerHTML = card("Team Red", B, "red", final);
   }
 
-  /* ---------- 3D: Cici (left) and Lunox (right) next to the title ---------- */
+  /* ---------- 3D: Lunox on the right side next to the title ---------- */
   // Tweak these if a model faces the wrong way or looks too big/small:
-  //   slot: -1 left, 1 right | face: base rotation (radians) | height: fraction of the header height
+  //   slot: -1 left, 1 right (she's on the right) | face: base rotation (radians) | height: fraction of the header height
   const ACTORS = [
-    { name: "cici",  url: "assets/cici_mlbb.glb",                  slot: -1, face:  0.45, height: 0.9 },
-    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot:  1, face: -0.45, height: 0.9 },
+    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot: 1, face: -0.45, height: 0.9 },
   ];
 
   const wrap = $("catWrap");
@@ -369,7 +368,7 @@
 
   const progress = ACTORS.map(() => 0);
   let remaining = ACTORS.length;
-  const showProgress = () => { $("loading").textContent = `Loading heroes… ${Math.round(progress.reduce((x, y) => x + y, 0) / ACTORS.length * 100)}%`; };
+  const showProgress = () => { $("loading").textContent = `Loading Lunox… ${Math.round(progress.reduce((x, y) => x + y, 0) / ACTORS.length * 100)}%`; };
   const doneOne = () => { if (--remaining === 0) $("loading").classList.add("hidden"); };
 
   ACTORS.forEach((a, i) => loader.load(
@@ -381,7 +380,9 @@
       a.pivot.add(model);
       if (gltf.animations.length) {
         a.mixer = new THREE.AnimationMixer(model);
-        gltf.animations.forEach(c => a.mixer.clipAction(c).play());
+        const idle = gltf.animations.find(c => /idle|stand|wait/i.test(c.name)) || gltf.animations[0];
+        a.hasIdle = true;
+        a.mixer.clipAction(idle).play();
         a.mixer.update(0); // apply the first animation frame so the measured size matches what you see
       }
       model.updateMatrixWorld(true);
@@ -403,16 +404,14 @@
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
     const t = now / 1000;
-    const st = now - spinStart;
 
     for (const a of ACTORS) {
-      if (a.mixer) a.mixer.update(dt * (spinning ? 1 : 0.5));
-      if (spinning) {
-        a.pivot.rotation.y = a.face + Math.sin(st / 160) * 0.9;  // swing like crazy while deciding
-        a.holder.position.y = a.baseY + Math.abs(Math.sin(st / 120 + a.slot)) * 0.25;
+      a.pivot.rotation.y = a.face;
+      if (a.mixer) {
+        a.mixer.update(dt);                                  // her own idle animation, always the same speed
+        a.holder.position.y = a.baseY;
       } else {
-        a.pivot.rotation.y = a.face + Math.sin(t * 0.8 + a.slot) * 0.3; // calm idle sway
-        a.holder.position.y = a.baseY + Math.sin(t * 1.5 + a.slot) * 0.05;
+        a.holder.position.y = a.baseY + Math.sin(t * 1.5) * 0.05; // no animation in the file: tiny float so she isn't frozen
       }
     }
     renderer.render(scene, camera);
