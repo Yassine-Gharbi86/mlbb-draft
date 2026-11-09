@@ -33,7 +33,7 @@
 <body class="text-slate-100 font-sans">
 <main class="max-w-5xl mx-auto px-3 sm:px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-36 sm:pt-10 sm:pb-10">
   <h1 class="text-2xl sm:text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-xs sm:text-sm px-2">Random team, lane, hero, spell, blessing and build. Out of your comfort zone mode 😈</p>
+  <p class="text-center text-slate-400 mt-2 text-xs sm:text-sm px-2">Random team, lane, hero, spell, blessing, build, emblem and talents. Out of your comfort zone mode 😈</p>
 
   <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center gap-3 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur border-t border-slate-700 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
     <button id="btn" class="flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-base sm:text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
@@ -161,6 +161,23 @@
     return needBoots ? shuffle(out) : out;
   }
 
+  /* ---------- emblems + talents ---------- */
+  const EMBLEM_SLUGS = ["assassin","common","fighter","mage","marksman","support","tank"];
+  const TALENT_SLUGS = {
+    1: ["agility","fatal","firmness","inspire-talent","rupture","swift","thrill","vitality"],
+    2: ["bargain-hunter","festival-of-blood","master-assassin","pull-yourself-together","seasoned-hunter","tenacity","weapon-master","wilderness-blessing"],
+    3: ["brave-smite","concussive-blast","focusing-mark","impure-rage","killing-spree","lethal-ignition","quantum-charge","temporal-reign","war-cry","weakness-finder"],
+  };
+  const TALENT_FIX = { "inspire-talent": "Inspire" };
+  const nice = (slug) => TALENT_FIX[slug] || slug.split("-").map((w, i) => (i > 0 && SMALL.includes(w)) ? w : w[0].toUpperCase() + w.slice(1)).join(" ");
+  const EMBLEMS = EMBLEM_SLUGS.map(sl => ({ name: nice(sl) + " Emblem", img: `emblems/${sl}.png` }));
+  const TALENTS = Object.fromEntries(Object.entries(TALENT_SLUGS).map(([tier, list]) =>
+    [tier, list.map(sl => ({ name: nice(sl), img: `talents/tier-${tier}/${sl}.webp` }))]));
+  [...EMBLEMS, ...TALENTS[1], ...TALENTS[2], ...TALENTS[3]].forEach(x => { const im = new Image(); im.src = x.img; });
+
+  // one random emblem + one random talent from each of the 3 tiers
+  const buildSetup = () => ({ emblem: pick(EMBLEMS), talents: [pick(TALENTS[1]), pick(TALENTS[2]), pick(TALENTS[3])] });
+
   function generate() {
     // everyone is shuffled: first 5 = Blue, last 5 = Red
     const p = shuffle(PLAYERS);
@@ -173,7 +190,7 @@
     const spellFor = (lane) => lane === "Jungle" ? "Retribution" : pick(OTHER_SPELLS);
     const makePlayer = (name, hero, lane) => {
       const blessing = blessingFor(lane);
-      return { name, hero, spell: spellFor(lane), items: buildItems(lane, blessing), blessing };
+      return { name, hero, spell: spellFor(lane), items: buildItems(lane, blessing), blessing, ...buildSetup() };
     };
     LANES.forEach((_, i) => {
       A[lanesA[i]] = makePlayer(p[i], h[i], lanesA[i]);
@@ -213,6 +230,13 @@
             <div class="flex flex-col items-center text-center ${popOnly}" title="${it.name}">
               <img src="${it.img}" alt="${it.name}" class="${icon} rounded-md bg-slate-800 ${it.boots ? ring('amber-400') : ''}">
               <span class="${nameSz} leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
+            </div>`).join("")}
+        </div>
+        <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-700">
+          ${[{ ...team[lane].emblem, emblem: true }, ...team[lane].talents].map(x => `
+            <div class="flex flex-col items-center text-center ${popOnly}" title="${x.name}">
+              <img src="${x.img}" alt="${x.name}" class="${icon} rounded-md bg-slate-800 ${x.emblem ? ring('sky-400') : ''}">
+              <span class="${nameSz} leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${x.name}</span>
             </div>`).join("")}
         </div>
       </li>`).join("");
