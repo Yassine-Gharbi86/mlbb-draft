@@ -11,6 +11,7 @@
 <link rel="icon" href="data:,">
 <title>MLBB 5v5 Team Randomizer</title>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -34,9 +35,12 @@
   <h1 class="text-2xl sm:text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
   <p class="text-center text-slate-400 mt-2 text-xs sm:text-sm px-2">Random team, lane, hero, spell, blessing and build. Out of your comfort zone mode 😈</p>
 
-  <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur border-t border-slate-700 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
-    <button id="btn" class="w-full sm:w-auto px-8 py-4 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
+  <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center gap-3 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur border-t border-slate-700 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
+    <button id="btn" class="flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-base sm:text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
       🎲 Randomize Teams
+    </button>
+    <button id="shotBtn" class="hidden flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-white font-bold text-base sm:text-lg shadow-lg disabled:opacity-60">
+      📸 Screenshot
     </button>
   </div>
 
@@ -49,6 +53,17 @@
     <div id="red"></div>
   </div>
 </main>
+
+<div id="shotModal" class="hidden fixed inset-0 z-50 bg-black/85 flex-col items-center px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))]">
+  <p class="text-slate-300 text-xs sm:text-sm mb-3 text-center">Long-press the image to save it, or tap the button 👇</p>
+  <div class="flex-1 min-h-0 w-full overflow-auto flex justify-center items-start">
+    <img id="shotImg" alt="MLBB draft screenshot" class="max-w-full h-auto rounded-lg" style="-webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto;">
+  </div>
+  <div class="flex gap-3 mt-3 w-full max-w-md">
+    <button id="shotShare" class="flex-1 px-4 py-4 rounded-xl bg-emerald-500 active:scale-95 transition text-slate-900 font-bold">💾 Save / Share</button>
+    <button id="shotClose" class="px-6 py-4 rounded-xl bg-slate-700 active:scale-95 transition text-white font-bold">Close</button>
+  </div>
+</div>
 
 <audio id="music" src="assets/music.mp3" preload="auto"></audio>
 
@@ -167,42 +182,53 @@
     return [A, B];
   }
 
-  function card(title, team, color, final) {
+  // wide = true is used for the exported screenshot: fixed desktop layout, no animations
+  function card(title, team, color, final, wide = false) {
+    const live = wide ? "" : (final ? "pop" : "shake");
+    const popOnly = wide ? "" : (final ? "pop" : "");
+    const gridCls = wide ? "grid grid-cols-6 gap-2 mt-3" : "grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-1 mt-3";
+    const icon = wide ? "w-12 h-12" : "w-11 h-11 sm:w-9 sm:h-9";
+    const nameSz = wide ? "text-[11px]" : "text-[10px]";
+    // rings don't survive html2canvas, so the export uses borders instead
+    const ring = (c) => wide ? `border-2 border-${c}` : `ring-2 ring-${c}`;
     const rows = LANES.map(lane => `
       <li class="bg-slate-900/60 rounded-lg px-3 sm:px-4 py-3">
         <div class="flex items-center justify-between">
           <div>
             <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
             ${team[lane].blessing ? `
-              <div class="flex items-center gap-2 mt-2 ${final ? 'pop' : ''}" title="${team[lane].blessing.name}">
-                <img src="${team[lane].blessing.img}" alt="${team[lane].blessing.name}" class="w-9 h-9 rounded-md bg-slate-800 ring-2 ring-fuchsia-400">
+              <div class="flex items-center gap-2 mt-2 ${popOnly}" title="${team[lane].blessing.name}">
+                <img src="${team[lane].blessing.img}" alt="${team[lane].blessing.name}" class="${icon} rounded-md bg-slate-800 ${ring('fuchsia-400')}">
                 <span class="text-xs leading-tight ${final ? 'text-fuchsia-300' : 'text-amber-200/60'}">${team[lane].blessing.name}</span>
               </div>` : ''}
           </div>
-          <span class="text-right leading-tight ${final ? 'pop' : 'shake'}">
+          <span class="text-right leading-tight ${live}">
             <span class="block font-semibold ${final ? 'text-white' : 'text-amber-300'}">${team[lane].name}</span>
             <span class="block text-sm ${final ? 'text-sky-300' : 'text-amber-200/70'}">${team[lane].hero}</span>
             <span class="block text-xs ${final ? 'text-emerald-300' : 'text-amber-200/50'}">✨ ${team[lane].spell}</span>
           </span>
         </div>
-        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-1 mt-3">
+        <div class="${gridCls}">
           ${team[lane].items.map(it => `
-            <div class="flex flex-col items-center text-center ${final ? 'pop' : ''}" title="${it.name}">
-              <img src="${it.img}" alt="${it.name}" class="w-11 h-11 sm:w-9 sm:h-9 rounded-md bg-slate-800 ${it.boots ? 'ring-2 ring-amber-400' : ''}">
-              <span class="text-[10px] leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
+            <div class="flex flex-col items-center text-center ${popOnly}" title="${it.name}">
+              <img src="${it.img}" alt="${it.name}" class="${icon} rounded-md bg-slate-800 ${it.boots ? ring('amber-400') : ''}">
+              <span class="${nameSz} leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
             </div>`).join("")}
         </div>
       </li>`).join("");
     return `
-      <section class="rounded-2xl p-3 sm:p-5 bg-slate-800 border-t-4 ${color} shadow-lg">
-        <h2 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4">${title}</h2>
+      <section class="rounded-2xl ${wide ? 'p-5' : 'p-3 sm:p-5'} bg-slate-800 border-t-4 ${color} shadow-lg">
+        <h2 class="${wide ? 'text-xl' : 'text-lg sm:text-xl'} font-bold ${wide ? 'mb-4' : 'mb-3 sm:mb-4'}">${title}</h2>
         <ul class="space-y-2">${rows}</ul>
       </section>`;
   }
 
+  let current = null; // the teams currently on screen
+
   const $ = (id) => document.getElementById(id);
   function render(final) {
     const [A, B] = generate();
+    current = [A, B];
     $("blue").innerHTML = card("Team Blue", A, "border-blue-500", final);
     $("red").innerHTML = card("Team Red", B, "border-red-500", final);
   }
@@ -280,11 +306,12 @@
   requestAnimationFrame(animate);
 
   /* ---------- main button ---------- */
-  const btn = $("btn"), status = $("status");
+  const btn = $("btn"), status = $("status"), shotBtn = $("shotBtn");
 
   function start() {
     btn.disabled = true;
     btn.textContent = "🌀 Deciding...";
+    shotBtn.classList.add("hidden");
     $("stage").classList.remove("hidden");
     resize();
     // on phones, bring the cat into view
@@ -319,10 +346,81 @@
     // on phones, jump to the teams
     if (window.innerWidth < 1024) setTimeout(() => $("blue").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     btn.disabled = false;
-    btn.textContent = "🎲 Randomize Again";
+    btn.textContent = "🎲 Re-roll";
+    shotBtn.classList.remove("hidden");
   }
 
   btn.addEventListener("click", start);
+
+  /* ---------- screenshot: both teams in ONE image ---------- */
+  let shotUrl = null, shotFile = null;
+
+  function showShot(blob) {
+    if (shotUrl) URL.revokeObjectURL(shotUrl);
+    shotUrl = URL.createObjectURL(blob);
+    shotFile = new File([blob], "mlbb-draft.png", { type: "image/png" });
+    $("shotImg").src = shotUrl;
+    $("shotModal").classList.remove("hidden");
+    $("shotModal").classList.add("flex");
+  }
+
+  async function takeShot() {
+    if (!current || !window.html2canvas) { alert("Screenshot tool didn't load. Check your connection and refresh."); return; }
+    const label = shotBtn.textContent;
+    shotBtn.disabled = true;
+    shotBtn.textContent = "⏳ Working...";
+
+    // hidden export layout: title + Blue and Red side by side, fixed width
+    const root = document.createElement("div");
+    root.id = "exportRoot";
+    root.className = "text-slate-100 font-sans";
+    root.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;padding:32px;background:#0f172a;";
+    root.innerHTML = `
+      <h1 class="text-3xl font-bold text-center">MLBB 5v5 Draft 🎲</h1>
+      <div class="grid grid-cols-2 gap-6 mt-6">
+        ${card("Team Blue", current[0], "border-blue-500", true, true)}
+        ${card("Team Red", current[1], "border-red-500", true, true)}
+      </div>`;
+    document.body.appendChild(root);
+
+    try {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 250)); // let Tailwind generate the styles
+      await Promise.all([...root.querySelectorAll("img")].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
+      const canvas = await html2canvas(root, {
+        backgroundColor: "#0f172a",
+        scale: 2,
+        useCORS: true,
+        onclone: (doc) => { doc.getElementById("exportRoot").style.left = "0"; },
+      });
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+      showShot(blob);
+    } catch (e) {
+      console.error(e);
+      alert("Couldn't make the screenshot. Open the console (F12) and send me the error.");
+    } finally {
+      root.remove();
+      shotBtn.disabled = false;
+      shotBtn.textContent = label;
+    }
+  }
+
+  shotBtn.addEventListener("click", takeShot);
+  $("shotClose").addEventListener("click", () => {
+    $("shotModal").classList.add("hidden");
+    $("shotModal").classList.remove("flex");
+  });
+  $("shotShare").addEventListener("click", async () => {
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [shotFile] })) {
+        await navigator.share({ files: [shotFile], title: "MLBB Draft" });
+      } else {
+        const a = document.createElement("a");
+        a.href = shotUrl; a.download = "mlbb-draft.png";
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+    } catch (e) { /* share cancelled */ }
+  });
 </script>
 </body>
 </html>
