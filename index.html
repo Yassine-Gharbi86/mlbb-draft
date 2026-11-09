@@ -81,8 +81,11 @@
   const ITEM_SLUGS = ["antique-cuirass","athenas-shield","berserkers-fury","blade-armor","blade-of-despair","blade-of-the-heptaseas","blood-wings","brute-force-breastplate","chastise-pauldron","clock-of-destiny","concentrated-energy","corrosion-scythe","cursed-helmet","demon-hunter-sword","divine-glaive","dominance-ice","enchanted-talisman","endless-battle","feather-of-heaven","flask-of-the-oasis","fleeting-time","genius-wand","glowing-wand","golden-staff","great-dragon-spear","guardian-helmet","haass-claws","holy-crystal","hunter-strike","ice-queen-wand","immortality","lightning-truncheon","malefic-gun","malefic-roar","oracle","queens-wings","radiant-armor","rose-gold-meteor","sea-halberd","sky-piercer","starlium-scythe","thunder-belt","war-axe","wind-of-nature","windtalker","winter-crown","wishing-lantern"];
   const NAME_FIX = { "athenas-shield": "Athena's Shield", "berserkers-fury": "Berserker's Fury", "haass-claws": "Haas's Claws", "queens-wings": "Queen's Wings" };
   const SMALL = ["of", "the"];
+  // active items: a player can only have ONE of these (Conceal blessing counts too)
+  const ACTIVE_SLUGS = ["winter-crown", "wind-of-nature"];
   const toItem = (slug, boots) => ({
     slug, boots,
+    active: ACTIVE_SLUGS.includes(slug),
     img: `items/${slug}.png`,
     name: NAME_FIX[slug] || slug.split("-").map((w, i) => (i > 0 && SMALL.includes(w)) ? w : w[0].toUpperCase() + w.slice(1)).join(" "),
   });
@@ -113,21 +116,23 @@
     return null;
   }
 
-  function buildItems(lane) {
-    // jungle + roam: 1 guaranteed boots + 5 other items
-    if (lane === "Jungle" || lane === "Roam") {
-      return shuffle([pick(BOOTS), ...shuffle(ITEMS).slice(0, 5)]);
-    }
-    // other lanes: 6 from the full pool, but never more than one boots
+  function buildItems(lane, blessing) {
+    // Conceal already counts as the player's one active, so no Winter Crown / Wind of Nature
+    let activeUsed = !!blessing && blessing.name === "Conceal";
+    const needBoots = lane === "Jungle" || lane === "Roam"; // guaranteed 1 boots
     const out = [];
     let hasBoots = false;
+    if (needBoots) { out.push(pick(BOOTS)); hasBoots = true; }
+
     for (const it of shuffle([...ITEMS, ...BOOTS])) {
-      if (it.boots && hasBoots) continue;
-      if (it.boots) hasBoots = true;
-      out.push(it);
       if (out.length === 6) break;
+      if (it.boots && hasBoots) continue;   // max one boots
+      if (it.active && activeUsed) continue; // max one active
+      if (it.boots) hasBoots = true;
+      if (it.active) activeUsed = true;
+      out.push(it);
     }
-    return out;
+    return needBoots ? shuffle(out) : out;
   }
 
   function generate() {
@@ -140,9 +145,13 @@
     const lanesA = shuffle(LANES), lanesB = shuffle(LANES);
     // jungle always gets Retribution, everyone else a random spell (never Retribution)
     const spellFor = (lane) => lane === "Jungle" ? "Retribution" : pick(OTHER_SPELLS);
+    const makePlayer = (name, hero, lane) => {
+      const blessing = blessingFor(lane);
+      return { name, hero, spell: spellFor(lane), items: buildItems(lane, blessing), blessing };
+    };
     LANES.forEach((_, i) => {
-      A[lanesA[i]] = { name: p[i], hero: h[i], spell: spellFor(lanesA[i]), items: buildItems(lanesA[i]), blessing: blessingFor(lanesA[i]) };
-      B[lanesB[i]] = { name: p[i + 5], hero: h[i + 5], spell: spellFor(lanesB[i]), items: buildItems(lanesB[i]), blessing: blessingFor(lanesB[i]) };
+      A[lanesA[i]] = makePlayer(p[i], h[i], lanesA[i]);
+      B[lanesB[i]] = makePlayer(p[i + 5], h[i + 5], lanesB[i]);
     });
     return [A, B];
   }
