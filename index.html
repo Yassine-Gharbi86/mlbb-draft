@@ -75,12 +75,12 @@
 <body class="text-slate-100">
 <main class="max-w-6xl mx-auto px-3 sm:px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-36 sm:pt-8 sm:pb-12">
 
-  <header id="arena" class="relative h-[190px] sm:h-[250px] scroll-mt-3">
+  <header id="arena" class="relative h-[190px] sm:h-[340px] scroll-mt-3">
     <div id="catWrap" class="absolute inset-0"></div>
     <div class="relative z-10 h-full flex flex-col items-center justify-center text-center px-14 sm:px-0 pointer-events-none">
       <p class="f-display text-[8px] sm:text-xs tracking-[.3em] sm:tracking-[.35em] text-amber-300/80 uppercase">Mobile Legends · 5v5 Draft</p>
       <h1 class="f-display title-gradient text-2xl sm:text-5xl font-black tracking-wider mt-2">DRAFT ARENA</h1>
-      <p class="text-slate-400 text-xs sm:text-lg mt-1">Random lanes, heroes &amp; builds 😈</p>
+      <p class="text-slate-400 text-xs sm:text-lg mt-1">The GOOONERS 😈</p>
     </div>
     <div id="loading" class="f-display absolute bottom-0 inset-x-0 text-center text-amber-200/70 text-[9px] sm:text-[10px] tracking-[.3em] uppercase pointer-events-none">Loading Lunox… 0%</div>
   </header>
@@ -311,7 +311,7 @@
   // Tweak these if a model faces the wrong way or looks too big/small:
   //   slot: -1 left, 1 right (she's on the right) | face: base rotation (radians) | height: fraction of the header height
   const ACTORS = [
-    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot: 1, face: -0.45, height: 0.9 },
+    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot: 1, face: -0.45, height: 0.95 },
   ];
 
   const wrap = $("catWrap");
@@ -350,7 +350,7 @@
     ACTORS.forEach(a => {
       if (!a.size || !a.size.y) return;
       const diag = Math.hypot(a.size.x, a.size.z) || 1;
-      a.pivot.scale.setScalar(Math.min((visH * a.height) / a.size.y, (visW * 0.2) / diag));
+      a.pivot.scale.setScalar(Math.min((visH * a.height) / a.size.y, (visW * 0.3) / diag));
       a.baseY = -visH * 0.03;
       a.holder.position.set(a.slot * visW * 0.40, a.baseY, 0);
     });
@@ -387,7 +387,12 @@
       }
       model.updateMatrixWorld(true);
       // precise = measure the real skinned pose (rigged models are way off otherwise)
-      const box = new THREE.Box3().setFromObject(model, true);
+      const box = new THREE.Box3();
+      model.traverse(o => {
+      if (!o.isMesh || !o.visible) return;
+      if (o.material && (o.material.visible === false || o.material.opacity === 0)) return;
+      box.union(new THREE.Box3().setFromObject(o, true));
+      });
       a.size = box.getSize(new THREE.Vector3());
       model.position.sub(box.getCenter(new THREE.Vector3())); // center on its pivot
       progress[i] = 1; showProgress(); layout(); doneOne();
