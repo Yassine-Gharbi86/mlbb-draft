@@ -38,19 +38,6 @@
   .f-display { font-family: 'Orbitron', system-ui, sans-serif; }
   .title-gradient { background: linear-gradient(90deg, #fde68a, #f5c451 40%, #ffffff 58%, #f5c451); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-  /* hero arena */
-  .arena { border-radius: 24px; border: 1px solid rgba(245,196,81,.25); overflow: hidden;
-    background:
-      radial-gradient(60% 70% at 14% 100%, rgba(59,130,246,.40), transparent 70%),
-      radial-gradient(60% 70% at 86% 100%, rgba(239,68,68,.40), transparent 70%),
-      radial-gradient(40% 60% at 50% 100%, rgba(245,196,81,.22), transparent 70%),
-      linear-gradient(180deg, rgba(15,23,42,.35), rgba(2,6,23,.8));
-    box-shadow: inset 0 0 80px rgba(0,0,0,.55), 0 20px 60px -20px rgba(0,0,0,.85); }
-  .plate { font-family: 'Orbitron', system-ui, sans-serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background: rgba(2,6,23,.72); border: 1px solid; }
-  .plate-blue { color: #93c5fd; border-color: #3b82f6; }
-  .plate-red  { color: #fca5a5; border-color: #ef4444; }
-  .plate-gold { color: #fde68a; border-color: #f5c451; }
-
   /* team panels (no vars / clip-path so the screenshot export renders them right) */
   .team-card { border-radius: 18px; overflow: hidden; background: linear-gradient(180deg, rgba(15,23,42,.94), rgba(6,10,20,.96)); border: 1px solid rgba(148,163,184,.18); }
   .team-blue { box-shadow: 0 0 0 1px rgba(59,130,246,.3), 0 14px 44px -14px rgba(59,130,246,.55); }
@@ -88,19 +75,15 @@
 <body class="text-slate-100">
 <main class="max-w-6xl mx-auto px-3 sm:px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-36 sm:pt-8 sm:pb-12">
 
-  <header class="text-center">
-    <p class="f-display text-[9px] sm:text-xs tracking-[.35em] text-amber-300/80 uppercase">Mobile Legends · 5v5 Custom Draft</p>
-    <h1 class="f-display title-gradient text-3xl sm:text-5xl font-black tracking-wider mt-2">DRAFT ARENA</h1>
-    <p class="text-slate-400 text-sm sm:text-lg mt-1">Random lanes, heroes, spells, builds &amp; talents. Out of your comfort zone 😈</p>
-  </header>
-
-  <section id="arena" class="arena relative mt-5 sm:mt-7 h-[230px] sm:h-[340px] lg:h-[440px] scroll-mt-3">
+  <header id="arena" class="relative h-[190px] sm:h-[250px] scroll-mt-3">
     <div id="catWrap" class="absolute inset-0"></div>
-    <div id="loading" class="f-display absolute inset-0 flex items-center justify-center text-amber-200/80 text-[10px] sm:text-xs tracking-[.3em] uppercase pointer-events-none">Loading heroes… 0%</div>
-    <span class="plate plate-blue absolute left-3 bottom-3">Cici</span>
-    <span class="plate plate-gold absolute left-1/2 -translate-x-1/2 bottom-3">Oiia Cat</span>
-    <span class="plate plate-red absolute right-3 bottom-3">Lunox</span>
-  </section>
+    <div class="relative z-10 h-full flex flex-col items-center justify-center text-center px-14 sm:px-0 pointer-events-none">
+      <p class="f-display text-[8px] sm:text-xs tracking-[.3em] sm:tracking-[.35em] text-amber-300/80 uppercase">Mobile Legends · 5v5 Draft</p>
+      <h1 class="f-display title-gradient text-2xl sm:text-5xl font-black tracking-wider mt-2">DRAFT ARENA</h1>
+      <p class="text-slate-400 text-xs sm:text-lg mt-1">Random lanes, heroes &amp; builds 😈</p>
+    </div>
+    <div id="loading" class="f-display absolute bottom-0 inset-x-0 text-center text-amber-200/70 text-[9px] sm:text-[10px] tracking-[.3em] uppercase pointer-events-none">Loading heroes… 0%</div>
+  </header>
 
   <p id="status" class="f-display text-center text-amber-300 text-[11px] sm:text-sm tracking-[.2em] uppercase mt-3 min-h-[2.5rem]"></p>
 
@@ -127,8 +110,6 @@
   </div>
 </div>
 
-<audio id="music" src="assets/music.mp3" preload="auto"></audio>
-
 <script type="module">
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -142,7 +123,7 @@
   const ICONS = { "Gold Lane": "🪙", "Mid Lane": "🔮", "Jungle": "🌲", "EXP Lane": "⚔️", "Roam": "🛡️" };
   const MESSAGES = [
     "Consulting the ancient spirits... 🔮",
-    "Asking the cat... 🐱",
+    "Asking Cici and Lunox... 🦋",
     "Bribing the RNG gods... 💸",
     "Calculating who feeds... 💀",
     "Checking who's gonna AFK... 😴",
@@ -326,13 +307,12 @@
     $("red").innerHTML = card("Team Red", B, "red", final);
   }
 
-  /* ---------- 3D arena: Cici (left) · Cat (middle) · Lunox (right) ---------- */
+  /* ---------- 3D: Cici (left) and Lunox (right) next to the title ---------- */
   // Tweak these if a model faces the wrong way or looks too big/small:
-  //   slot: -1 left, 0 middle, 1 right | face: base rotation (radians) | height: fraction of arena height
+  //   slot: -1 left, 1 right | face: base rotation (radians) | height: fraction of the header height
   const ACTORS = [
-    { name: "cici",  url: "assets/cici_mlbb.glb",                  slot: -1, face:  0.45, height: 0.92 },
-    { name: "cat",   url: "assets/oiiaioooooiai_cat.glb",          slot:  0, face:  0,    height: 0.55, spinner: true },
-    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot:  1, face: -0.45, height: 0.92 },
+    { name: "cici",  url: "assets/cici_mlbb.glb",                  slot: -1, face:  0.45, height: 0.9 },
+    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot:  1, face: -0.45, height: 0.9 },
   ];
 
   const wrap = $("catWrap");
@@ -371,9 +351,9 @@
     ACTORS.forEach(a => {
       if (!a.size || !a.size.y) return;
       const diag = Math.hypot(a.size.x, a.size.z) || 1;
-      a.pivot.scale.setScalar(Math.min((visH * a.height) / a.size.y, (visW * 0.3) / diag));
+      a.pivot.scale.setScalar(Math.min((visH * a.height) / a.size.y, (visW * 0.2) / diag));
       a.baseY = -visH * 0.03;
-      a.holder.position.set(a.slot * visW * 0.34, a.baseY, 0);
+      a.holder.position.set(a.slot * visW * 0.40, a.baseY, 0);
     });
   }
   window.addEventListener("resize", layout);
@@ -397,14 +377,18 @@
     (gltf) => {
       const model = gltf.scene;
       model.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
-      const box = new THREE.Box3().setFromObject(model);
-      a.size = box.getSize(new THREE.Vector3());
-      model.position.sub(box.getCenter(new THREE.Vector3())); // center on its pivot
+      a.pivot.rotation.set(0, 0, 0); a.pivot.scale.setScalar(1); a.holder.position.set(0, 0, 0);
       a.pivot.add(model);
       if (gltf.animations.length) {
         a.mixer = new THREE.AnimationMixer(model);
         gltf.animations.forEach(c => a.mixer.clipAction(c).play());
+        a.mixer.update(0); // apply the first animation frame so the measured size matches what you see
       }
+      model.updateMatrixWorld(true);
+      // precise = measure the real skinned pose (rigged models are way off otherwise)
+      const box = new THREE.Box3().setFromObject(model, true);
+      a.size = box.getSize(new THREE.Vector3());
+      model.position.sub(box.getCenter(new THREE.Vector3())); // center on its pivot
       progress[i] = 1; showProgress(); layout(); doneOne();
     },
     (e) => { if (e.total) { progress[i] = e.loaded / e.total; showProgress(); } },
@@ -412,7 +396,6 @@
   ));
 
   /* ---------- animation loop ---------- */
-  const music = $("music");
   let spinning = false, spinStart = 0, last = performance.now();
 
   function animate(now) {
@@ -425,18 +408,16 @@
     for (const a of ACTORS) {
       if (a.mixer) a.mixer.update(dt * (spinning ? 1 : 0.5));
       if (spinning) {
-        if (a.spinner) a.pivot.rotation.y += dt * 14;                    // the cat goes brrr
-        else a.pivot.rotation.y = a.face + Math.sin(st / 160) * 0.9;     // heroes swing like crazy
+        a.pivot.rotation.y = a.face + Math.sin(st / 160) * 0.9;  // swing like crazy while deciding
         a.holder.position.y = a.baseY + Math.abs(Math.sin(st / 120 + a.slot)) * 0.25;
       } else {
-        if (a.spinner) a.pivot.rotation.y += dt * 0.8;                   // slow idle spin
-        else a.pivot.rotation.y = a.face + Math.sin(t * 0.8 + a.slot) * 0.3;
+        a.pivot.rotation.y = a.face + Math.sin(t * 0.8 + a.slot) * 0.3; // calm idle sway
         a.holder.position.y = a.baseY + Math.sin(t * 1.5 + a.slot) * 0.05;
       }
     }
-    if (spinning && st > DURATION - 600) music.volume = Math.max(0, (DURATION - st) / 600); // fade out
     renderer.render(scene, camera);
   }
+
   requestAnimationFrame(animate);
 
   /* ---------- main button ---------- */
@@ -450,10 +431,6 @@
     layout();
     // on phones, keep the arena in view
     if (window.innerWidth < 1024) $("arena").scrollIntoView({ behavior: "smooth", block: "start" });
-
-    music.currentTime = 0;
-    music.volume = 1;
-    music.play().catch((e) => console.warn("Audio blocked:", e));
 
     spinning = true;
     spinStart = performance.now();
@@ -472,7 +449,6 @@
 
   function finish() {
     spinning = false;
-    music.pause();
     render(true);
     status.textContent = "Teams locked! GG 🔥";
     // on phones, jump to the teams
