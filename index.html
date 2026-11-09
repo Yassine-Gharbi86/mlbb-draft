@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:,">
 <title>MLBB 5v5 Team Randomizer</title>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script type="importmap">
@@ -12,29 +18,34 @@
 } }
 </script>
 <style>
-  body { background: #0f172a; }
+  html { background: #0f172a; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { background: #0f172a; min-height: 100vh; min-height: 100dvh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+  button { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  img { -webkit-user-drag: none; -webkit-touch-callout: none; }
+  canvas { display: block; max-width: 100%; touch-action: pan-y; }
   @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
   .pop { animation: pop .45s ease-out both; }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
   .shake { animation: shake .12s infinite; }
 </style>
 </head>
-<body class="min-h-screen text-slate-100 font-sans">
-<main class="max-w-5xl mx-auto px-4 py-10">
-  <h1 class="text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-sm">Random team, lane, hero, spell, blessing and build. Out of your comfort zone mode 😈</p>
+<body class="text-slate-100 font-sans">
+<main class="max-w-5xl mx-auto px-3 sm:px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-36 sm:pt-10 sm:pb-10">
+  <h1 class="text-2xl sm:text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
+  <p class="text-center text-slate-400 mt-2 text-xs sm:text-sm px-2">Random team, lane, hero, spell, blessing and build. Out of your comfort zone mode 😈</p>
 
-  <div class="flex justify-center mt-8">
-    <button id="btn" class="px-8 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
+  <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur border-t border-slate-700 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
+    <button id="btn" class="w-full sm:w-auto px-8 py-4 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
       🎲 Randomize Teams
     </button>
   </div>
 
-  <p id="status" class="text-center text-amber-300 font-semibold mt-6 h-6"></p>
-
-  <div id="stage" class="hidden grid lg:grid-cols-[1fr_auto_1fr] gap-6 mt-4 items-center">
-    <div id="blue"></div>
-    <div id="catWrap" class="order-first lg:order-none w-60 h-60 sm:w-72 sm:h-72 mx-auto flex items-center justify-center text-7xl"></div>
+  <div id="stage" class="hidden grid lg:grid-cols-[1fr_auto_1fr] gap-4 sm:gap-6 mt-6 items-center scroll-mt-3">
+    <div id="blue" class="scroll-mt-3"></div>
+    <div class="order-first lg:order-none flex flex-col items-center">
+      <div id="catWrap" class="w-52 h-52 sm:w-72 sm:h-72 flex items-center justify-center text-7xl"></div>
+      <p id="status" class="text-center text-amber-300 font-semibold mt-2 min-h-[3rem] max-w-[16rem] text-sm sm:text-base"></p>
+    </div>
     <div id="red"></div>
   </div>
 </main>
@@ -158,7 +169,7 @@
 
   function card(title, team, color, final) {
     const rows = LANES.map(lane => `
-      <li class="bg-slate-900/60 rounded-lg px-4 py-3">
+      <li class="bg-slate-900/60 rounded-lg px-3 sm:px-4 py-3">
         <div class="flex items-center justify-between">
           <div>
             <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
@@ -174,17 +185,17 @@
             <span class="block text-xs ${final ? 'text-emerald-300' : 'text-amber-200/50'}">✨ ${team[lane].spell}</span>
           </span>
         </div>
-        <div class="grid grid-cols-6 gap-1 mt-3">
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-1 mt-3">
           ${team[lane].items.map(it => `
             <div class="flex flex-col items-center text-center ${final ? 'pop' : ''}" title="${it.name}">
-              <img src="${it.img}" alt="${it.name}" class="w-9 h-9 rounded-md bg-slate-800 ${it.boots ? 'ring-2 ring-amber-400' : ''}">
-              <span class="text-[9px] leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
+              <img src="${it.img}" alt="${it.name}" class="w-11 h-11 sm:w-9 sm:h-9 rounded-md bg-slate-800 ${it.boots ? 'ring-2 ring-amber-400' : ''}">
+              <span class="text-[10px] leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
             </div>`).join("")}
         </div>
       </li>`).join("");
     return `
-      <section class="rounded-2xl p-5 bg-slate-800 border-t-4 ${color} shadow-lg">
-        <h2 class="text-xl font-bold mb-4">${title}</h2>
+      <section class="rounded-2xl p-3 sm:p-5 bg-slate-800 border-t-4 ${color} shadow-lg">
+        <h2 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4">${title}</h2>
         <ul class="space-y-2">${rows}</ul>
       </section>`;
   }
@@ -245,6 +256,8 @@
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", () => setTimeout(resize, 200));
+  if ("ResizeObserver" in window) new ResizeObserver(resize).observe(wrap);
   wrap.appendChild(renderer.domElement);
 
   /* ---------- spin loop ---------- */
@@ -274,6 +287,8 @@
     btn.textContent = "🌀 Deciding...";
     $("stage").classList.remove("hidden");
     resize();
+    // on phones, bring the cat into view
+    if (window.innerWidth < 1024) $("stage").scrollIntoView({ behavior: "smooth", block: "start" });
 
     music.currentTime = 0;
     music.volume = 1;
@@ -282,13 +297,14 @@
     spinning = true;
     spinStart = performance.now();
 
+    const base = window.innerWidth < 640 ? 100 : 60; // gentler re-render rate on phones
     const tick = () => {
       const t = performance.now() - spinStart;
       if (t >= DURATION) return finish();
       render(false);
       status.textContent = MESSAGES[Math.min(MESSAGES.length - 1, Math.floor(t / (DURATION / MESSAGES.length)))];
       // fast at first, slowing down for suspense
-      setTimeout(tick, 60 + Math.pow(t / DURATION, 3) * 450);
+      setTimeout(tick, base + Math.pow(t / DURATION, 3) * 450);
     };
     tick();
   }
@@ -300,6 +316,8 @@
     pivot.position.y = 0;
     render(true);
     status.textContent = "Teams locked! GG 🔥";
+    // on phones, jump to the teams
+    if (window.innerWidth < 1024) setTimeout(() => $("blue").scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     btn.disabled = false;
     btn.textContent = "🎲 Randomize Again";
   }
