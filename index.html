@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#070b14">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:,">
-<title>MLBB 5v5 Team Randomizer</title>
+<title>MLBB Draft Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="importmap">
@@ -19,38 +22,97 @@
 } }
 </script>
 <style>
-  html { background: #0f172a; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-  body { background: #0f172a; min-height: 100vh; min-height: 100dvh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+  html { background: #070b14; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { min-height: 100vh; min-height: 100dvh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; font-family: 'Rajdhani', system-ui, sans-serif; font-weight: 600; }
+  /* pro-scene backdrop: blue left, red right, gold top glow + faint grid */
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(900px 420px at 50% -8%, rgba(245,196,81,.13), transparent 65%),
+      radial-gradient(700px 600px at -5% 45%, rgba(59,130,246,.17), transparent 65%),
+      radial-gradient(700px 600px at 105% 45%, rgba(239,68,68,.17), transparent 65%),
+      linear-gradient(rgba(148,163,184,.045) 1px, transparent 1px) 0 0 / 44px 44px,
+      linear-gradient(90deg, rgba(148,163,184,.045) 1px, transparent 1px) 0 0 / 44px 44px; }
   button { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
   img { -webkit-user-drag: none; -webkit-touch-callout: none; }
-  canvas { display: block; max-width: 100%; touch-action: pan-y; }
+  canvas { display: block; touch-action: pan-y; }
+  .f-display { font-family: 'Orbitron', system-ui, sans-serif; }
+  .title-gradient { background: linear-gradient(90deg, #fde68a, #f5c451 40%, #ffffff 58%, #f5c451); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* hero arena */
+  .arena { border-radius: 24px; border: 1px solid rgba(245,196,81,.25); overflow: hidden;
+    background:
+      radial-gradient(60% 70% at 14% 100%, rgba(59,130,246,.40), transparent 70%),
+      radial-gradient(60% 70% at 86% 100%, rgba(239,68,68,.40), transparent 70%),
+      radial-gradient(40% 60% at 50% 100%, rgba(245,196,81,.22), transparent 70%),
+      linear-gradient(180deg, rgba(15,23,42,.35), rgba(2,6,23,.8));
+    box-shadow: inset 0 0 80px rgba(0,0,0,.55), 0 20px 60px -20px rgba(0,0,0,.85); }
+  .plate { font-family: 'Orbitron', system-ui, sans-serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background: rgba(2,6,23,.72); border: 1px solid; }
+  .plate-blue { color: #93c5fd; border-color: #3b82f6; }
+  .plate-red  { color: #fca5a5; border-color: #ef4444; }
+  .plate-gold { color: #fde68a; border-color: #f5c451; }
+
+  /* team panels (no vars / clip-path so the screenshot export renders them right) */
+  .team-card { border-radius: 18px; overflow: hidden; background: linear-gradient(180deg, rgba(15,23,42,.94), rgba(6,10,20,.96)); border: 1px solid rgba(148,163,184,.18); }
+  .team-blue { box-shadow: 0 0 0 1px rgba(59,130,246,.3), 0 14px 44px -14px rgba(59,130,246,.55); }
+  .team-red  { box-shadow: 0 0 0 1px rgba(239,68,68,.3), 0 14px 44px -14px rgba(239,68,68,.55); }
+  .team-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; color: #fff; }
+  .team-blue .team-head { background: linear-gradient(90deg, #2563eb, rgba(37,99,235,.05)); }
+  .team-red  .team-head { background: linear-gradient(90deg, #dc2626, rgba(220,38,38,.05)); }
+  .slot { padding: 12px; border-radius: 12px; border-left: 3px solid; background: linear-gradient(90deg, rgba(30,41,59,.75), rgba(15,23,42,.55)); }
+  .team-blue .slot { border-left-color: #3b82f6; }
+  .team-red  .slot { border-left-color: #ef4444; }
+  .lane-tag { font-family: 'Orbitron', system-ui, sans-serif; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #f5c451; }
+  .pname { font-size: 20px; line-height: 1.05; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .hero-name { font-size: 15px; font-weight: 700; color: #f5c451; letter-spacing: .04em; }
+  .chip { display: inline-block; margin-top: 3px; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: rgba(16,185,129,.16); border: 1px solid rgba(52,211,153,.45); color: #6ee7b7; }
+  .chip-live { background: rgba(245,158,11,.12); border-color: rgba(251,191,36,.3); color: rgba(253,230,138,.7); }
+  .vs { font-family: 'Orbitron', system-ui, sans-serif; font-weight: 900; font-size: 18px; color: #f5c451; border: 2px solid #f5c451; border-radius: 10px; padding: 6px 12px; letter-spacing: .12em; box-shadow: 0 0 24px rgba(245,196,81,.35); background: rgba(2,6,23,.7); }
+
+  /* buttons */
+  .btn-gold { font-family: 'Orbitron', system-ui, sans-serif; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #1a1204; border-radius: 12px;
+    background: linear-gradient(180deg, #fde68a, #f5c451 55%, #d99a1a); box-shadow: 0 0 26px rgba(245,196,81,.35), inset 0 1px 0 rgba(255,255,255,.6); transition: transform .1s, filter .15s; }
+  .btn-gold:hover { filter: brightness(1.08); }
+  .btn-gold:active { transform: scale(.96); }
+  .btn-gold:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-ghost { font-family: 'Orbitron', system-ui, sans-serif; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #e2e8f0; border-radius: 12px; background: rgba(30,41,59,.9); border: 1px solid rgba(148,163,184,.4); transition: transform .1s, background .15s; }
+  .btn-ghost:hover { background: rgba(51,65,85,.95); }
+  .btn-ghost:active { transform: scale(.96); }
+  .btn-ghost:disabled { opacity: .6; }
+
   @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
   .pop { animation: pop .45s ease-out both; }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
   .shake { animation: shake .12s infinite; }
 </style>
 </head>
-<body class="text-slate-100 font-sans">
-<main class="max-w-5xl mx-auto px-3 sm:px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-36 sm:pt-10 sm:pb-10">
-  <h1 class="text-2xl sm:text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-xs sm:text-sm px-2">Random team, lane, hero, spell, blessing, build, emblem and talents. Out of your comfort zone mode 😈</p>
+<body class="text-slate-100">
+<main class="max-w-6xl mx-auto px-3 sm:px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-36 sm:pt-8 sm:pb-12">
 
-  <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center gap-3 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-900/90 backdrop-blur border-t border-slate-700 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
-    <button id="btn" class="flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-base sm:text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
-      🎲 Randomize Teams
-    </button>
-    <button id="shotBtn" class="hidden flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-white font-bold text-base sm:text-lg shadow-lg disabled:opacity-60">
-      📸 Screenshot
-    </button>
+  <header class="text-center">
+    <p class="f-display text-[9px] sm:text-xs tracking-[.35em] text-amber-300/80 uppercase">Mobile Legends · 5v5 Custom Draft</p>
+    <h1 class="f-display title-gradient text-3xl sm:text-5xl font-black tracking-wider mt-2">DRAFT ARENA</h1>
+    <p class="text-slate-400 text-sm sm:text-lg mt-1">Random lanes, heroes, spells, builds &amp; talents. Out of your comfort zone 😈</p>
+  </header>
+
+  <section id="arena" class="arena relative mt-5 sm:mt-7 h-[230px] sm:h-[340px] lg:h-[440px] scroll-mt-3">
+    <div id="catWrap" class="absolute inset-0"></div>
+    <div id="loading" class="f-display absolute inset-0 flex items-center justify-center text-amber-200/80 text-[10px] sm:text-xs tracking-[.3em] uppercase pointer-events-none">Loading heroes… 0%</div>
+    <span class="plate plate-blue absolute left-3 bottom-3">Cici</span>
+    <span class="plate plate-gold absolute left-1/2 -translate-x-1/2 bottom-3">Oiia Cat</span>
+    <span class="plate plate-red absolute right-3 bottom-3">Lunox</span>
+  </section>
+
+  <p id="status" class="f-display text-center text-amber-300 text-[11px] sm:text-sm tracking-[.2em] uppercase mt-3 min-h-[2.5rem]"></p>
+
+  <div id="stage" class="hidden grid lg:grid-cols-[1fr_auto_1fr] gap-3 sm:gap-6 items-start scroll-mt-3">
+    <div id="blue" class="scroll-mt-3"></div>
+    <div class="flex lg:flex-col items-center justify-center gap-3 lg:pt-28"><span class="vs">VS</span></div>
+    <div id="red" class="scroll-mt-3"></div>
   </div>
 
-  <div id="stage" class="hidden grid lg:grid-cols-[1fr_auto_1fr] gap-4 sm:gap-6 mt-6 items-center scroll-mt-3">
-    <div id="blue" class="scroll-mt-3"></div>
-    <div class="order-first lg:order-none flex flex-col items-center">
-      <div id="catWrap" class="w-52 h-52 sm:w-72 sm:h-72 flex items-center justify-center text-7xl"></div>
-      <p id="status" class="text-center text-amber-300 font-semibold mt-2 min-h-[3rem] max-w-[16rem] text-sm sm:text-base"></p>
-    </div>
-    <div id="red"></div>
+  <div class="fixed bottom-0 inset-x-0 z-20 flex justify-center gap-3 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] bg-slate-950/90 backdrop-blur border-t border-amber-300/20 sm:static sm:z-auto sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:p-0 sm:mt-8">
+    <button id="btn" class="btn-gold flex-1 sm:flex-none px-4 sm:px-10 py-4 sm:py-3 text-xs sm:text-base">🎲 Randomize Teams</button>
+    <button id="shotBtn" class="btn-ghost hidden flex-1 sm:flex-none px-4 sm:px-8 py-4 sm:py-3 text-xs sm:text-base">📸 Screenshot</button>
   </div>
 </main>
 
@@ -60,8 +122,8 @@
     <img id="shotImg" alt="MLBB draft screenshot" class="max-w-full h-auto rounded-lg" style="-webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto;">
   </div>
   <div class="flex gap-3 mt-3 w-full max-w-md">
-    <button id="shotShare" class="flex-1 px-4 py-4 rounded-xl bg-emerald-500 active:scale-95 transition text-slate-900 font-bold">💾 Save / Share</button>
-    <button id="shotClose" class="px-6 py-4 rounded-xl bg-slate-700 active:scale-95 transition text-white font-bold">Close</button>
+    <button id="shotShare" class="btn-gold flex-1 px-4 py-4 text-xs">💾 Save / Share</button>
+    <button id="shotClose" class="btn-ghost px-6 py-4 text-xs">Close</button>
   </div>
 </div>
 
@@ -70,6 +132,9 @@
 <script type="module">
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+  import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
   /* ---------- config ---------- */
   const DURATION = 7000; // ms
@@ -200,117 +265,153 @@
   }
 
   // wide = true is used for the exported screenshot: fixed desktop layout, no animations
-  function card(title, team, color, final, wide = false) {
+  // side = "blue" | "red"
+  function card(title, team, side, final, wide = false) {
     const live = wide ? "" : (final ? "pop" : "shake");
     const popOnly = wide ? "" : (final ? "pop" : "");
     const gridCls = wide ? "grid grid-cols-6 gap-2 mt-3" : "grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-1 mt-3";
     const icon = wide ? "w-12 h-12" : "w-11 h-11 sm:w-9 sm:h-9";
-    const nameSz = wide ? "text-[11px]" : "text-[10px]";
+    const nameSz = wide ? "text-[13px]" : "text-[11px] sm:text-[12px]";
     // rings don't survive html2canvas, so the export uses borders instead
     const ring = (c) => wide ? `border-2 border-${c}` : `ring-2 ring-${c}`;
-    const rows = LANES.map(lane => `
-      <li class="bg-slate-900/60 rounded-lg px-3 sm:px-4 py-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
-            ${team[lane].blessing ? `
-              <div class="flex items-center gap-2 mt-2 ${popOnly}" title="${team[lane].blessing.name}">
-                <img src="${team[lane].blessing.img}" alt="${team[lane].blessing.name}" class="${icon} rounded-md bg-slate-800 ${ring('fuchsia-400')}">
-                <span class="text-xs leading-tight ${final ? 'text-fuchsia-300' : 'text-amber-200/60'}">${team[lane].blessing.name}</span>
+    const tile = (x, extra) => `
+      <div class="flex flex-col items-center text-center ${popOnly}" title="${x.name}">
+        <img src="${x.img}" alt="${x.name}" class="${icon} rounded-md bg-slate-800 ${extra}">
+        <span class="${nameSz} font-semibold leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${x.name}</span>
+      </div>`;
+    const rows = LANES.map(lane => {
+      const p = team[lane];
+      return `
+      <li class="slot">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="lane-tag">${ICONS[lane]} ${lane}</div>
+            ${p.blessing ? `
+              <div class="flex items-center gap-2 mt-2 ${popOnly}" title="${p.blessing.name}">
+                <img src="${p.blessing.img}" alt="${p.blessing.name}" class="${icon} rounded-md bg-slate-800 ${ring('fuchsia-400')}">
+                <span class="${nameSz} leading-tight ${final ? 'text-fuchsia-300' : 'text-amber-200/60'}">${p.blessing.name}</span>
               </div>` : ''}
           </div>
-          <span class="text-right leading-tight ${live}">
-            <span class="block font-semibold ${final ? 'text-white' : 'text-amber-300'}">${team[lane].name}</span>
-            <span class="block text-sm ${final ? 'text-sky-300' : 'text-amber-200/70'}">${team[lane].hero}</span>
-            <span class="block text-xs ${final ? 'text-emerald-300' : 'text-amber-200/50'}">✨ ${team[lane].spell}</span>
-          </span>
+          <div class="text-right ${live}">
+            <div class="pname ${final ? 'text-white' : 'text-amber-300'}">${p.name}</div>
+            <div class="hero-name">${p.hero}</div>
+            <div class="chip ${final ? '' : 'chip-live'}">✨ ${p.spell}</div>
+          </div>
         </div>
         <div class="${gridCls}">
-          ${team[lane].items.map(it => `
-            <div class="flex flex-col items-center text-center ${popOnly}" title="${it.name}">
-              <img src="${it.img}" alt="${it.name}" class="${icon} rounded-md bg-slate-800 ${it.boots ? ring('amber-400') : ''}">
-              <span class="${nameSz} leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
-            </div>`).join("")}
+          ${p.items.map(it => tile(it, it.boots ? ring('amber-400') : '')).join("")}
         </div>
         <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-700">
-          ${[{ ...team[lane].emblem, emblem: true }, ...team[lane].talents].map(x => `
-            <div class="flex flex-col items-center text-center ${popOnly}" title="${x.name}">
-              <img src="${x.img}" alt="${x.name}" class="${icon} rounded-md bg-slate-800 ${x.emblem ? ring('sky-400') : ''}">
-              <span class="${nameSz} leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${x.name}</span>
-            </div>`).join("")}
+          ${[{ ...p.emblem, emblem: true }, ...p.talents].map(x => tile(x, x.emblem ? ring('sky-400') : '')).join("")}
         </div>
-      </li>`).join("");
+      </li>`;
+    }).join("");
     return `
-      <section class="rounded-2xl ${wide ? 'p-5' : 'p-3 sm:p-5'} bg-slate-800 border-t-4 ${color} shadow-lg">
-        <h2 class="${wide ? 'text-xl' : 'text-lg sm:text-xl'} font-bold ${wide ? 'mb-4' : 'mb-3 sm:mb-4'}">${title}</h2>
-        <ul class="space-y-2">${rows}</ul>
+      <section class="team-card team-${side}">
+        <div class="team-head">
+          <h2 class="f-display text-sm sm:text-base font-black tracking-[.2em] uppercase">${title}</h2>
+          <span class="text-[11px] tracking-widest uppercase opacity-80">5 players</span>
+        </div>
+        <ul class="p-2 sm:p-3 space-y-2">${rows}</ul>
       </section>`;
   }
 
+  const $ = (id) => document.getElementById(id);
   let current = null; // the teams currently on screen
 
-  const $ = (id) => document.getElementById(id);
   function render(final) {
     const [A, B] = generate();
     current = [A, B];
-    $("blue").innerHTML = card("Team Blue", A, "border-blue-500", final);
-    $("red").innerHTML = card("Team Red", B, "border-red-500", final);
+    $("blue").innerHTML = card("Team Blue", A, "blue", final);
+    $("red").innerHTML = card("Team Red", B, "red", final);
   }
 
-  /* ---------- 3D cat ---------- */
+  /* ---------- 3D arena: Cici (left) · Cat (middle) · Lunox (right) ---------- */
+  // Tweak these if a model faces the wrong way or looks too big/small:
+  //   slot: -1 left, 0 middle, 1 right | face: base rotation (radians) | height: fraction of arena height
+  const ACTORS = [
+    { name: "cici",  url: "assets/cici_mlbb.glb",                  slot: -1, face:  0.45, height: 0.92 },
+    { name: "cat",   url: "assets/oiiaioooooiai_cat.glb",          slot:  0, face:  0,    height: 0.55, spinner: true },
+    { name: "lunox", url: "assets/lunox_-_butterfly_seraphim.glb", slot:  1, face: -0.45, height: 0.92 },
+  ];
+
   const wrap = $("catWrap");
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 640 ? 1.5 : 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  wrap.appendChild(renderer.domElement);
+
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-  camera.position.set(0, 0.4, 4);
-  scene.add(new THREE.AmbientLight(0xffffff, 1.6));
-  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-  sun.position.set(3, 5, 4);
-  scene.add(sun);
+  scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+  const FOV = 35, CAM_Z = 10;
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
+  camera.position.set(0, 0, CAM_Z);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(2, 4, 6); scene.add(key);
+  const blueLight = new THREE.DirectionalLight(0x3b82f6, 2.2); blueLight.position.set(-6, 2, 3); scene.add(blueLight);
+  const redLight = new THREE.DirectionalLight(0xef4444, 2.2); redLight.position.set(6, 2, 3); scene.add(redLight);
 
-  const pivot = new THREE.Group();
-  scene.add(pivot);
-  let mixer = null;
+  ACTORS.forEach(a => {
+    a.holder = new THREE.Group();  // position in the arena
+    a.pivot = new THREE.Group();   // rotation + scale
+    a.holder.add(a.pivot);
+    scene.add(a.holder);
+    a.size = null; a.mixer = null; a.baseY = 0;
+  });
 
-  new GLTFLoader().load(
-    "assets/oiiaioooooiai_cat.glb",
-    (gltf) => {
-      const model = gltf.scene;
-      // center + scale to fit
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(center);
-      const s = 2.2 / Math.max(size.x, size.y, size.z);
-      pivot.scale.setScalar(s);
-      pivot.add(model);
-      if (gltf.animations.length) {
-        mixer = new THREE.AnimationMixer(model);
-        gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-      }
-    },
-    undefined,
-    (err) => {
-      console.error("Couldn't load the cat model:", err);
-      wrap.textContent = "🐱";
-      wrap.classList.add("animate-spin");
-    }
-  );
-
-  function resize() {
+  function layout() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    const visH = 2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * CAM_Z;
+    const visW = visH * camera.aspect;
+    ACTORS.forEach(a => {
+      if (!a.size || !a.size.y) return;
+      const diag = Math.hypot(a.size.x, a.size.z) || 1;
+      a.pivot.scale.setScalar(Math.min((visH * a.height) / a.size.y, (visW * 0.3) / diag));
+      a.baseY = -visH * 0.03;
+      a.holder.position.set(a.slot * visW * 0.34, a.baseY, 0);
+    });
   }
-  window.addEventListener("resize", resize);
-  window.addEventListener("orientationchange", () => setTimeout(resize, 200));
-  if ("ResizeObserver" in window) new ResizeObserver(resize).observe(wrap);
-  wrap.appendChild(renderer.domElement);
+  window.addEventListener("resize", layout);
+  window.addEventListener("orientationchange", () => setTimeout(layout, 200));
+  if ("ResizeObserver" in window) new ResizeObserver(layout).observe(wrap);
 
-  /* ---------- spin loop ---------- */
+  // loading (works with normal, Draco and Meshopt compressed glb files)
+  const draco = new DRACOLoader();
+  draco.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+  const loader = new GLTFLoader();
+  loader.setDRACOLoader(draco);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+
+  const progress = ACTORS.map(() => 0);
+  let remaining = ACTORS.length;
+  const showProgress = () => { $("loading").textContent = `Loading heroes… ${Math.round(progress.reduce((x, y) => x + y, 0) / ACTORS.length * 100)}%`; };
+  const doneOne = () => { if (--remaining === 0) $("loading").classList.add("hidden"); };
+
+  ACTORS.forEach((a, i) => loader.load(
+    a.url,
+    (gltf) => {
+      const model = gltf.scene;
+      model.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+      const box = new THREE.Box3().setFromObject(model);
+      a.size = box.getSize(new THREE.Vector3());
+      model.position.sub(box.getCenter(new THREE.Vector3())); // center on its pivot
+      a.pivot.add(model);
+      if (gltf.animations.length) {
+        a.mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach(c => a.mixer.clipAction(c).play());
+      }
+      progress[i] = 1; showProgress(); layout(); doneOne();
+    },
+    (e) => { if (e.total) { progress[i] = e.loaded / e.total; showProgress(); } },
+    (err) => { console.error("Couldn't load " + a.url, err); doneOne(); }
+  ));
+
+  /* ---------- animation loop ---------- */
   const music = $("music");
   let spinning = false, spinStart = 0, last = performance.now();
 
@@ -318,13 +419,22 @@
     requestAnimationFrame(animate);
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
-    if (spinning) {
-      const t = now - spinStart;
-      pivot.rotation.y += dt * 14;                       // goofy fast spin
-      pivot.position.y = Math.abs(Math.sin(t / 120)) * 0.15; // little bounce
-      if (mixer) mixer.update(dt);
-      if (t > DURATION - 600) music.volume = Math.max(0, (DURATION - t) / 600); // fade out
+    const t = now / 1000;
+    const st = now - spinStart;
+
+    for (const a of ACTORS) {
+      if (a.mixer) a.mixer.update(dt * (spinning ? 1 : 0.5));
+      if (spinning) {
+        if (a.spinner) a.pivot.rotation.y += dt * 14;                    // the cat goes brrr
+        else a.pivot.rotation.y = a.face + Math.sin(st / 160) * 0.9;     // heroes swing like crazy
+        a.holder.position.y = a.baseY + Math.abs(Math.sin(st / 120 + a.slot)) * 0.25;
+      } else {
+        if (a.spinner) a.pivot.rotation.y += dt * 0.8;                   // slow idle spin
+        else a.pivot.rotation.y = a.face + Math.sin(t * 0.8 + a.slot) * 0.3;
+        a.holder.position.y = a.baseY + Math.sin(t * 1.5 + a.slot) * 0.05;
+      }
     }
+    if (spinning && st > DURATION - 600) music.volume = Math.max(0, (DURATION - st) / 600); // fade out
     renderer.render(scene, camera);
   }
   requestAnimationFrame(animate);
@@ -337,9 +447,9 @@
     btn.textContent = "🌀 Deciding...";
     shotBtn.classList.add("hidden");
     $("stage").classList.remove("hidden");
-    resize();
-    // on phones, bring the cat into view
-    if (window.innerWidth < 1024) $("stage").scrollIntoView({ behavior: "smooth", block: "start" });
+    layout();
+    // on phones, keep the arena in view
+    if (window.innerWidth < 1024) $("arena").scrollIntoView({ behavior: "smooth", block: "start" });
 
     music.currentTime = 0;
     music.volume = 1;
@@ -363,8 +473,6 @@
   function finish() {
     spinning = false;
     music.pause();
-    pivot.rotation.y = 0;
-    pivot.position.y = 0;
     render(true);
     status.textContent = "Teams locked! GG 🔥";
     // on phones, jump to the teams
@@ -397,13 +505,13 @@
     // hidden export layout: title + Blue and Red side by side, fixed width
     const root = document.createElement("div");
     root.id = "exportRoot";
-    root.className = "text-slate-100 font-sans";
-    root.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;padding:32px;background:#0f172a;";
+    root.className = "f-body text-slate-100";
+    root.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;padding:32px;background:#070b14;";
     root.innerHTML = `
-      <h1 class="text-3xl font-bold text-center">MLBB 5v5 Draft 🎲</h1>
-      <div class="grid grid-cols-2 gap-6 mt-6">
-        ${card("Team Blue", current[0], "border-blue-500", true, true)}
-        ${card("Team Red", current[1], "border-red-500", true, true)}
+      <p style="text-align:center;font-size:12px;letter-spacing:.35em;color:#fcd34d;text-transform:uppercase">Mobile Legends · 5v5 Custom Draft</p><h1 class="f-display" style="text-align:center;font-size:34px;font-weight:900;letter-spacing:.1em;color:#f5c451;margin-top:6px">DRAFT ARENA</h1>
+      <div class="grid grid-cols-2 gap-6 mt-5">
+        ${card("Team Blue", current[0], "blue", true, true)}
+        ${card("Team Red", current[1], "red", true, true)}
       </div>`;
     document.body.appendChild(root);
 
@@ -412,7 +520,7 @@
       await new Promise(r => setTimeout(r, 250)); // let Tailwind generate the styles
       await Promise.all([...root.querySelectorAll("img")].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
       const canvas = await html2canvas(root, {
-        backgroundColor: "#0f172a",
+        backgroundColor: "#070b14",
         scale: 2,
         useCORS: true,
         onclone: (doc) => { doc.getElementById("exportRoot").style.left = "0"; },
