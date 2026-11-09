@@ -22,7 +22,7 @@
 <body class="min-h-screen text-slate-100 font-sans">
 <main class="max-w-5xl mx-auto px-4 py-10">
   <h1 class="text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-sm">Random team, lane, hero and spell. Out of your comfort zone mode 😈</p>
+  <p class="text-center text-slate-400 mt-2 text-sm">Random team, lane, hero, spell and build. Out of your comfort zone mode 😈</p>
 
   <div class="flex justify-center mt-8">
     <button id="btn" class="px-8 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
@@ -76,6 +76,39 @@
   const OTHER_SPELLS = SPELLS.filter(s => s !== "Retribution");
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+  /* ---------- items ---------- */
+  const BOOT_SLUGS = ["arcane-boots","demon-boots","magic-boots","rapid-boots","swift-boots","tough-boots","warrior-boots"];
+  const ITEM_SLUGS = ["antique-cuirass","athenas-shield","berserkers-fury","blade-armor","blade-of-despair","blade-of-the-heptaseas","blood-wings","brute-force-breastplate","chastise-pauldron","clock-of-destiny","concentrated-energy","corrosion-scythe","cursed-helmet","demon-hunter-sword","divine-glaive","dominance-ice","enchanted-talisman","endless-battle","feather-of-heaven","flask-of-the-oasis","fleeting-time","genius-wand","glowing-wand","golden-staff","great-dragon-spear","guardian-helmet","haass-claws","holy-crystal","hunter-strike","ice-queen-wand","immortality","lightning-truncheon","malefic-gun","malefic-roar","oracle","queens-wings","radiant-armor","rose-gold-meteor","sea-halberd","sky-piercer","starlium-scythe","thunder-belt","war-axe","wind-of-nature","windtalker","winter-crown","wishing-lantern"];
+  const NAME_FIX = { "athenas-shield": "Athena's Shield", "berserkers-fury": "Berserker's Fury", "haass-claws": "Haas's Claws", "queens-wings": "Queen's Wings" };
+  const SMALL = ["of", "the"];
+  const toItem = (slug, boots) => ({
+    slug, boots,
+    img: `items/${slug}.png`,
+    name: NAME_FIX[slug] || slug.split("-").map((w, i) => (i > 0 && SMALL.includes(w)) ? w : w[0].toUpperCase() + w.slice(1)).join(" "),
+  });
+  const BOOTS = BOOT_SLUGS.map(s => toItem(s, true));
+  const ITEMS = ITEM_SLUGS.map(s => toItem(s, false));
+
+  // preload icons so the fast shuffle doesn't flicker blank
+  [...BOOTS, ...ITEMS].forEach(it => { const im = new Image(); im.src = it.img; });
+
+  function buildItems(lane) {
+    // jungle + roam: 1 guaranteed boots + 5 other items
+    if (lane === "Jungle" || lane === "Roam") {
+      return shuffle([pick(BOOTS), ...shuffle(ITEMS).slice(0, 5)]);
+    }
+    // other lanes: 6 from the full pool, but never more than one boots
+    const out = [];
+    let hasBoots = false;
+    for (const it of shuffle([...ITEMS, ...BOOTS])) {
+      if (it.boots && hasBoots) continue;
+      if (it.boots) hasBoots = true;
+      out.push(it);
+      if (out.length === 6) break;
+    }
+    return out;
+  }
+
   function generate() {
     // everyone is shuffled: first 5 = Blue, last 5 = Red
     const p = shuffle(PLAYERS);
@@ -87,21 +120,30 @@
     // jungle always gets Retribution, everyone else a random spell (never Retribution)
     const spellFor = (lane) => lane === "Jungle" ? "Retribution" : pick(OTHER_SPELLS);
     LANES.forEach((_, i) => {
-      A[lanesA[i]] = { name: p[i], hero: h[i], spell: spellFor(lanesA[i]) };
-      B[lanesB[i]] = { name: p[i + 5], hero: h[i + 5], spell: spellFor(lanesB[i]) };
+      A[lanesA[i]] = { name: p[i], hero: h[i], spell: spellFor(lanesA[i]), items: buildItems(lanesA[i]) };
+      B[lanesB[i]] = { name: p[i + 5], hero: h[i + 5], spell: spellFor(lanesB[i]), items: buildItems(lanesB[i]) };
     });
     return [A, B];
   }
 
   function card(title, team, color, final) {
     const rows = LANES.map(lane => `
-      <li class="flex items-center justify-between bg-slate-900/60 rounded-lg px-4 py-3">
-        <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
-        <span class="text-right leading-tight ${final ? 'pop' : 'shake'}">
-          <span class="block font-semibold ${final ? 'text-white' : 'text-amber-300'}">${team[lane].name}</span>
-          <span class="block text-sm ${final ? 'text-sky-300' : 'text-amber-200/70'}">${team[lane].hero}</span>
-          <span class="block text-xs ${final ? 'text-emerald-300' : 'text-amber-200/50'}">✨ ${team[lane].spell}</span>
-        </span>
+      <li class="bg-slate-900/60 rounded-lg px-4 py-3">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
+          <span class="text-right leading-tight ${final ? 'pop' : 'shake'}">
+            <span class="block font-semibold ${final ? 'text-white' : 'text-amber-300'}">${team[lane].name}</span>
+            <span class="block text-sm ${final ? 'text-sky-300' : 'text-amber-200/70'}">${team[lane].hero}</span>
+            <span class="block text-xs ${final ? 'text-emerald-300' : 'text-amber-200/50'}">✨ ${team[lane].spell}</span>
+          </span>
+        </div>
+        <div class="grid grid-cols-6 gap-1 mt-3">
+          ${team[lane].items.map(it => `
+            <div class="flex flex-col items-center text-center ${final ? 'pop' : ''}" title="${it.name}">
+              <img src="${it.img}" alt="${it.name}" class="w-9 h-9 rounded-md bg-slate-800 ${it.boots ? 'ring-2 ring-amber-400' : ''}">
+              <span class="text-[9px] leading-tight mt-1 ${final ? 'text-slate-300' : 'text-amber-200/60'}">${it.name}</span>
+            </div>`).join("")}
+        </div>
       </li>`).join("");
     return `
       <section class="rounded-2xl p-5 bg-slate-800 border-t-4 ${color} shadow-lg">
