@@ -22,7 +22,7 @@
 <body class="min-h-screen text-slate-100 font-sans">
 <main class="max-w-5xl mx-auto px-4 py-10">
   <h1 class="text-3xl font-bold text-center">MLBB 5v5 Team Randomizer</h1>
-  <p class="text-center text-slate-400 mt-2 text-sm">Random team, lane, hero, spell and build. Out of your comfort zone mode 😈</p>
+  <p class="text-center text-slate-400 mt-2 text-sm">Random team, lane, hero, spell, blessing and build. Out of your comfort zone mode 😈</p>
 
   <div class="flex justify-center mt-8">
     <button id="btn" class="px-8 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 transition text-slate-900 font-bold text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed">
@@ -92,6 +92,27 @@
   // preload icons so the fast shuffle doesn't flicker blank
   [...BOOTS, ...ITEMS].forEach(it => { const im = new Image(); im.src = it.img; });
 
+  /* ---------- blessings ---------- */
+  const JUNGLE_BLESSINGS = [
+    { name: "Bloody Retribution", img: "jungle-blessings/bloody-retribution.png" },
+    { name: "Flame Retribution", img: "jungle-blessings/flame-retribution.png" },
+    { name: "Ice Retribution", img: "jungle-blessings/ice-retribution.png" },
+  ];
+  const ROAM_BLESSINGS = [
+    { name: "Conceal", img: "roam-blessings/conceal.png" },
+    { name: "Dire Hit", img: "roam-blessings/dire-hit.png" },
+    { name: "Encourage", img: "roam-blessings/encourage.png" },
+    { name: "Favor", img: "roam-blessings/favor.png" },
+  ];
+  [...JUNGLE_BLESSINGS, ...ROAM_BLESSINGS].forEach(b => { const im = new Image(); im.src = b.img; });
+
+  // only jungle and roam get a blessing (one each), everyone else none
+  function blessingFor(lane) {
+    if (lane === "Jungle") return pick(JUNGLE_BLESSINGS);
+    if (lane === "Roam") return pick(ROAM_BLESSINGS);
+    return null;
+  }
+
   function buildItems(lane) {
     // jungle + roam: 1 guaranteed boots + 5 other items
     if (lane === "Jungle" || lane === "Roam") {
@@ -120,8 +141,8 @@
     // jungle always gets Retribution, everyone else a random spell (never Retribution)
     const spellFor = (lane) => lane === "Jungle" ? "Retribution" : pick(OTHER_SPELLS);
     LANES.forEach((_, i) => {
-      A[lanesA[i]] = { name: p[i], hero: h[i], spell: spellFor(lanesA[i]), items: buildItems(lanesA[i]) };
-      B[lanesB[i]] = { name: p[i + 5], hero: h[i + 5], spell: spellFor(lanesB[i]), items: buildItems(lanesB[i]) };
+      A[lanesA[i]] = { name: p[i], hero: h[i], spell: spellFor(lanesA[i]), items: buildItems(lanesA[i]), blessing: blessingFor(lanesA[i]) };
+      B[lanesB[i]] = { name: p[i + 5], hero: h[i + 5], spell: spellFor(lanesB[i]), items: buildItems(lanesB[i]), blessing: blessingFor(lanesB[i]) };
     });
     return [A, B];
   }
@@ -130,7 +151,14 @@
     const rows = LANES.map(lane => `
       <li class="bg-slate-900/60 rounded-lg px-4 py-3">
         <div class="flex items-center justify-between">
-          <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
+          <div>
+            <span class="text-slate-400 text-sm">${ICONS[lane]} ${lane}</span>
+            ${team[lane].blessing ? `
+              <div class="flex items-center gap-2 mt-2 ${final ? 'pop' : ''}" title="${team[lane].blessing.name}">
+                <img src="${team[lane].blessing.img}" alt="${team[lane].blessing.name}" class="w-9 h-9 rounded-md bg-slate-800 ring-2 ring-fuchsia-400">
+                <span class="text-xs leading-tight ${final ? 'text-fuchsia-300' : 'text-amber-200/60'}">${team[lane].blessing.name}</span>
+              </div>` : ''}
+          </div>
           <span class="text-right leading-tight ${final ? 'pop' : 'shake'}">
             <span class="block font-semibold ${final ? 'text-white' : 'text-amber-300'}">${team[lane].name}</span>
             <span class="block text-sm ${final ? 'text-sky-300' : 'text-amber-200/70'}">${team[lane].hero}</span>
