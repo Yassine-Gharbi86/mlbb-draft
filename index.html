@@ -463,6 +463,12 @@
 
   requestAnimationFrame(animate);
 
+  /* ---------- slot sound ---------- */
+  const slotSound = new Audio("assets/slot-sound.wav");
+  slotSound.preload = "auto";
+  slotSound.loop = true; // if the file is shorter than 7s it keeps going until the teams lock
+  const stopSlotSound = () => { slotSound.pause(); slotSound.currentTime = 0; };
+
   /* ---------- main button ---------- */
   const btn = $("btn"), status = $("status"), shotBtn = $("shotBtn");
 
@@ -474,6 +480,10 @@
     layout();
     // on phones, keep the arena in view
     if (window.innerWidth < 1024) $("arena").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // sound starts together with the shuffle (inside the click, so phones allow it)
+    slotSound.currentTime = 0;
+    slotSound.play().catch((e) => console.warn("Sound blocked:", e));
 
     spinning = true;
     spinStart = performance.now();
@@ -492,6 +502,7 @@
 
   function finish() {
     spinning = false;
+    stopSlotSound();
     render(true);
     status.textContent = "Teams locked! GG 🔥";
     // on phones, jump to the teams
